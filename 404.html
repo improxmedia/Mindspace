@@ -161,6 +161,26 @@
   .uprogress span{width:26px;height:4px;border-radius:3px;background:var(--line)}
   .uprogress span.on{background:var(--accent)}
   .closex{position:absolute;top:calc(18px + env(safe-area-inset-top));right:18px;background:transparent;color:var(--muted);font-size:24px}
+  /* chain */
+  .chainlabels{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px;font-size:10.5px;letter-spacing:1.5px;font-weight:700}
+  .chainlabels span{color:var(--muted);opacity:.45}
+  .chainlabels span.past{opacity:.7}
+  .chainlabels span.cur{color:#8aa0ff;opacity:1}
+  .chainlabels span:not(:last-child):after{content:" •";opacity:.4;margin-left:6px}
+  .chaincard{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:16px;font-size:15px;line-height:1.55;margin-bottom:10px;animation:fade .3s}
+  .chaincard.mini{font-size:13.5px;padding:13px;color:var(--muted)}
+  .chaincard.mini[data-g]{cursor:pointer}
+  .chaincard.mini[data-g]:active{border-color:#8aa0ff}
+  /* starry quote splash */
+  #splash{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:radial-gradient(ellipse at center,#1a1d3a 0%,#0a0a14 70%,#060608 100%);color:#eef;text-align:center;padding:30px;cursor:pointer}
+  #splash .stars{position:absolute;inset:0;overflow:hidden}
+  #splash .st{position:absolute;background:#fff;border-radius:50%;opacity:.5;animation:tw 3s infinite}
+  @keyframes tw{0%,100%{opacity:.2}50%{opacity:.8}}
+  #splash .badge{font-size:11px;letter-spacing:3px;color:#8aa0ff;border:1px solid #3a3f6a;border-radius:30px;padding:6px 16px;margin-bottom:22px}
+  #splash h1{font-family:Georgia,serif;font-size:28px;font-weight:600;margin:0 0 14px;max-width:520px;line-height:1.4}
+  #splash p{color:#9aa0c8;font-size:13px;margin:0;font-style:italic}
+  #splash .tap{position:absolute;bottom:40px;color:#6a6f9a;font-size:12px;letter-spacing:1px}
 </style>
 </head>
 <body data-theme="dark">
@@ -176,6 +196,15 @@
     <div class="lock-msg" id="lockMsg"></div>
     <div class="lock-hint" id="lockHint"></div>
   </div>
+</div>
+
+<!-- ============ STARRY QUOTE SPLASH ============ -->
+<div id="splash" class="hide">
+  <div class="stars" id="splashStars"></div>
+  <div class="badge">WHEN IT HITS</div>
+  <h1 id="splashQuote">You are never fighting alone.</h1>
+  <p id="splashSub">Call on Krishna's names.</p>
+  <div class="tap">tap to enter</div>
 </div>
 
 <!-- ============ APP ============ -->
@@ -399,7 +428,28 @@ function tentativeAdvance(){clearTimeout(advanceTimer);advanceTimer=setTimeout((
 function commitPin(p){localStorage.setItem(S.pin,p);pendingPin=null;pinBuf='';unlock()}
 function fail(m){$('#lockMsg').textContent=m;pinBuf='';const b=$('.lockbox');b.style.animation='none';void b.offsetWidth;b.style.animation='shake .35s';renderDots()}
 const sc=document.createElement('style');sc.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}';document.head.appendChild(sc);
-function unlock(){pinBuf='';pendingPin=null;$('#lock').classList.add('hide');$('#app').classList.remove('hide');bootApp()}
+function unlock(){pinBuf='';pendingPin=null;$('#lock').classList.add('hide');$('#app').classList.remove('hide');bootApp();showSplash()}
+
+/* ===== STARRY QUOTE SPLASH (shows on open, from your notes) ===== */
+const SPLASH_QUOTES=[
+  ["You are never fighting alone.","Call on Krishna's names."],
+  ["Gratitude is the opposite of lust.","Lust says 'I want.' You already have."],
+  ["Krishna gave you a heart to love.","Keep it pure — it is your temple."],
+  ["When you stood alone, He was there.","Radharani's mercy never leaves you."],
+  ["See her as mother, as sister.","Protect, respect — never use."],
+  ["Redirect — never suppress.","Let it pass like a wave."],
+  ["Despite the fall, He has a heart for you.","Get back up. You are loved."]
+];
+function showSplash(){
+  const q=SPLASH_QUOTES[new Date().getDate()%SPLASH_QUOTES.length];
+  $('#splashQuote').textContent='“'+q[0]+'”';
+  $('#splashSub').textContent=q[1];
+  let stars='';for(let i=0;i<60;i++){const s=Math.random()*2+1;stars+=`<span class="st" style="left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-delay:${Math.random()*3}s"></span>`}
+  $('#splashStars').innerHTML=stars;
+  $('#splash').classList.remove('hide');
+  setTimeout(()=>{ if(!$('#splash').classList.contains('hide')) $('#splash').classList.add('hide'); }, 4500);
+}
+$('#splash').onclick=()=>$('#splash').classList.add('hide');
 $('#keypad').addEventListener('click',e=>{const k=e.target.dataset.k;if(k)pressKey(k)});
 document.addEventListener('keydown',e=>{if($('#lock').classList.contains('hide'))return;if(/^[0-9]$/.test(e.key))pressKey(e.key);if(e.key==='Backspace')pressKey('del')});
 
@@ -503,71 +553,102 @@ function renderInsights(){const d=getData(),now=Date.now(),week=7*864e5;
   $('#sparkLabels').innerHTML=labels.map(l=>`<span>${l}</span>`).join('')}
 
 /* =====================================================================
-   URGE FLOW — alternates: Gratitude-first  ↔  Breathe + truth-first
-   then Capture the thought → Redirect (not suppress) → Done
+   THE 60-SECOND CHAIN  (from your wallpaper + your notes)
+   OBSERVE → ACCEPT → GRATITUDE → REFRAME → REDIRECT
+   "Call on Krishna's names. You are never fighting alone."
 ===================================================================== */
-let uState={step:0, flow:'A', captured:''};
+const CHAIN = ['Observe','Accept','Gratitude','Reframe','Redirect'];
+
+// ACCEPT cards — cleaned from your notes
+const ACCEPT_CARDS = [
+  "This thought resurfaced from something I watched before. It is allowed to come — I don't have to act on it.",
+  "I have fallen before, and that is part of being human. Krishna's love for me does not depend on me being perfect.",
+  "Krishna gave me a heart to love. Even when no one stayed with me, even when I stood alone in pain — He was with me, and He still is.",
+  "Despite my failures, Radharani and Krishna have a heart for me. I am accepted, not condemned.",
+  "I accept this feeling without fighting or hating myself. Acceptance, not shame, is how I get back up."
+];
+// GRATITUDE seeds — your notes, Krishna/Radharani
+const GRAT_SEEDS = [
+  "When I was alone and in pain, Krishna stood with me. Thank You for never leaving me.",
+  "Gratitude is the opposite of lust. Lust says 'I want.' I already HAVE — Krishna has given me so much.",
+  "Thank You Krishna for this body as a temple — for love, kindness and pureness.",
+  "Radharani, thank you for your mercy. I am held, I am loved, I am never fighting alone."
+];
+
+let uState={step:0, captured:'', accIdx:0, gratWritten:''};
 function openUrge(){
   $('#settingsModal').classList.add('hide');
-  // alternate flow each time
-  const last=localStorage.getItem(S.urgeAlt)||'B';
-  uState={step:0, flow:last==='A'?'B':'A', captured:''};
-  localStorage.setItem(S.urgeAlt,uState.flow);
+  uState={step:0, captured:'', accIdx:Math.floor(Math.random()*ACCEPT_CARDS.length), gratWritten:''};
   $('#urge').classList.remove('hide');
   renderUrge();
 }
 $('#urgeFab').onclick=openUrge;
-$('#urgeClose').onclick=()=>$('#urge').classList.add('hide');
+$('#urgeClose').onclick=()=>{ if(uState.step>0 && !confirm('Leave the chain? Your progress this round won\'t be saved.')) return; $('#urge').classList.add('hide'); };
 
-function urgeSteps(){
-  const grat=getGrat();
-  const gratStep={title:'Breathe. Remember your gratitude.', render:`
-    <div class="big-truth">“${escapeHtml(grat)}”</div>
-    <p class="sub" style="margin-top:18px">Gratitude is the opposite of lust. Lust says "I want." You already <b>have</b>.</p>`,
-    btn:'I feel it →'};
-  const breatheStep={title:'You are safe. God has a heart for you.', render:`
-    <div class="breath">breathe in… out…</div>
-    <div class="big-truth" style="text-align:center">“God has a heart for me. I was never meant to stand alone.”</div>`,
-    btn:'I am steadier →'};
-  const captureStep={title:'Capture the thought — before it vanishes.', render:`
-    <p class="sub">Don't suppress it. Name it. Writing it down takes its power away. What image / thought / feeling came?</p>
-    <textarea class="field" id="uCapture" style="min-height:120px" placeholder="The thought / trigger that came…">${escapeHtml(uState.captured)}</textarea>`,
-    btn:'I named it →'};
-  const redirectStep={title:'Now redirect the energy — don\'t fight it.', render:`
-    <div class="protocol"><div class="n">1</div><div class="t"><b>Acknowledge</b>This is an old trigger from before. It's allowed to come. I see it.</div></div>
-    <div class="protocol"><div class="n">2</div><div class="t"><b>Don't suppress</b>If I push it down, it returns bigger. I let it pass like a wave.</div></div>
-    <div class="protocol"><div class="n">3</div><div class="t"><b>Redirect</b>Move the energy: stand up, walk, pray, do one task, message a friend, or open my devotion.</div></div>
-    <div class="protocol"><div class="n">4</div><div class="t"><b>Purpose = road-blocker</b>Remember who I am and why. My temple is for love, kindness, pureness.</div></div>`,
-    btn:'I\'m redirecting →'};
-  const doneStep={title:'You caught it. That\'s a victory. 🛡', render:`
-    <div class="big-truth" style="text-align:center">“Despite the failure, God has a heart for me.”</div>
-    <p class="sub" style="text-align:center;margin-top:16px">Every urge you catch makes the road-block stronger. He is proud of you. So am I.</p>`,
-    btn:'Save this victory & close',
-    onBtn:saveUrgeVictory};
-  // Flow A: gratitude first. Flow B: breathe first.
-  return uState.flow==='A'
-    ? [gratStep, captureStep, redirectStep, doneStep]
-    : [breatheStep, captureStep, redirectStep, doneStep];
+function chainStepHTML(){
+  const i=uState.step;
+  // 0 OBSERVE
+  if(i===0) return {title:'Observe', sub:'Tap is done. Now name what surfaced — don\'t suppress it. What thought, image or feeling came up?',
+    body:`<textarea class="field" id="uCapture" style="min-height:120px" placeholder="e.g. an old image, a feeling, a craving…">${escapeHtml(uState.captured)}</textarea>`,
+    btn:'I\'ve observed it →'};
+  // 1 ACCEPT
+  if(i===1) return {title:'Accept', sub:'Read this slowly. Let it land. (Tap to see another.)',
+    body:`<div class="chaincard" id="accCard">${escapeHtml(ACCEPT_CARDS[uState.accIdx])}</div>
+      <button class="btn ghost" id="accMore" style="margin-top:10px">Show me another acceptance</button>`,
+    btn:'I accept this →'};
+  // 2 GRATITUDE
+  if(i===2) return {title:'Gratitude', sub:'Gratitude is the opposite of lust. Read one, or write your own to Krishna / Radharani.',
+    body:GRAT_SEEDS.map((g,k)=>`<div class="chaincard mini" data-g="${k}">${escapeHtml(g)}</div>`).join('')+
+      `<textarea class="field" id="uGrat" style="min-height:80px;margin-top:10px" placeholder="Write your gratitude to Krishna…">${escapeHtml(uState.gratWritten||getGrat())}</textarea>`,
+    btn:'I am grateful →'};
+  // 3 REFRAME
+  if(i===3) return {title:'Reframe', sub:'See clearly, as Krishna made it to be.',
+    body:`<div class="chaincard">Krishna created woman to be <b>protected, cared for and respected</b> — as a mother or sister — never as an object to use. The industry sells a lie. I refuse the lie.</div>
+      <div class="chaincard mini">She is someone's daughter, sister, mother. I honour her. This is my defence and my dignity.</div>`,
+    btn:'I\'ve reframed it →'};
+  // 4 REDIRECT
+  return {title:'Redirect', sub:'60 seconds. Call on Krishna\'s names. You are never fighting alone.',
+    body:`<div class="breath" id="breathCircle">breathe…</div>
+      <div class="chaincard" style="text-align:center">Don't compress it. Don't suppress it. Let it pass like a wave while I move the energy:</div>
+      <div class="chaincard mini">Stand up • walk • chant Hare Krishna • do one task • open my devotion</div>
+      <div id="chantTimer" style="text-align:center;font-size:34px;font-weight:800;margin-top:10px">60</div>`,
+    btn:'Done — I redirected it 🛡', onBtn:saveUrgeVictory};
 }
 function renderUrge(){
-  const steps=urgeSteps(), s=steps[uState.step];
-  $('#uprog').innerHTML=steps.map((_,i)=>`<span class="${i<=uState.step?'on':''}"></span>`).join('');
-  $('#ustep').innerHTML=`<div><h1>${s.title}</h1>${s.render}
+  const s=chainStepHTML();
+  // progress shows the named chain
+  $('#uprog').innerHTML=CHAIN.map((c,i)=>`<span class="${i<=uState.step?'on':''}" title="${c}"></span>`).join('');
+  $('#ustep').innerHTML=`<div>
+    <div class="chainlabels">${CHAIN.map((c,i)=>`<span class="${i===uState.step?'cur':''} ${i<uState.step?'past':''}">${c}</span>`).join('')}</div>
+    <h1>${s.title}</h1><p class="sub">${s.sub}</p>${s.body}
     <div class="ubtns"><button class="btn" id="uNext">${s.btn}</button>
     ${uState.step>0?'<button class="btn ghost" id="uBack">Back</button>':''}</div></div>`;
+
+  // step-specific wiring
+  if($('#accMore')) $('#accMore').onclick=()=>{uState.accIdx=(uState.accIdx+1)%ACCEPT_CARDS.length;$('#accCard').textContent=ACCEPT_CARDS[uState.accIdx]};
+  $$('#ustep .chaincard.mini[data-g]').forEach(c=>c.onclick=()=>{$('#uGrat').value=GRAT_SEEDS[c.dataset.g];uState.gratWritten=GRAT_SEEDS[c.dataset.g]});
+  if(uState.step===4) startChant();
+
   $('#uNext').onclick=()=>{
-    // capture text if on capture step
     const cap=$('#uCapture'); if(cap) uState.captured=cap.value;
+    const gr=$('#uGrat'); if(gr) uState.gratWritten=gr.value;
     if(s.onBtn){ s.onBtn(); return; }
     uState.step++; renderUrge();
   };
-  if($('#uBack')) $('#uBack').onclick=()=>{const cap=$('#uCapture'); if(cap) uState.captured=cap.value; uState.step--; renderUrge()};
+  if($('#uBack')) $('#uBack').onclick=()=>{const cap=$('#uCapture');if(cap)uState.captured=cap.value;const gr=$('#uGrat');if(gr)uState.gratWritten=gr.value;clearInterval(chantInt);uState.step--;renderUrge()};
 }
+let chantInt=null;
+function startChant(){clearInterval(chantInt);let t=60;const el=()=>document.getElementById('chantTimer');
+  chantInt=setInterval(()=>{t--;if(el())el().textContent=t;if(t<=0){clearInterval(chantInt);if(el())el().textContent='🙏';}},1000)}
 function saveUrgeVictory(){
+  clearInterval(chantInt);
   const d=getData();
+  const note=[];
+  if(uState.captured) note.push('Observed: '+uState.captured);
+  if(uState.gratWritten) note.push('Gratitude: '+uState.gratWritten);
   d.entries.unshift({id:Date.now(),t:Date.now(),mood:null,urge:true,gratitude:true,
-    text:uState.captured?('Trigger captured: '+uState.captured):'Urge caught and redirected.',
-    tags:['urge','strong']});
+    text:note.length?note.join(' • '):'Completed the 60-second chain. Urge redirected.',
+    tags:['urge','chain','strong']});
   setData(d);
   $('#urge').classList.add('hide');
   renderTimeline();renderInsights();renderTodayStats();
