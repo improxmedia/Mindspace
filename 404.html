@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="MindSpace" />
+<meta name="theme-color" content="#0a0a0a" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>MindSpace — Your private mind shield</title>
+<style>
+  :root{
+    --bg:#0a0a0a; --bg2:#141414; --card:#1a1a1a; --line:#2a2a2a;
+    --txt:#f5f5f5; --muted:#9a9a9a; --accent:#ffffff; --accent-ink:#0a0a0a;
+    --shadow:0 8px 30px rgba(0,0,0,.45); --r:18px;
+  }
+  [data-theme="light"]{
+    --bg:#f4f4f5; --bg2:#ffffff; --card:#ffffff; --line:#e4e4e7;
+    --txt:#141414; --muted:#6b7280; --accent:#0a0a0a; --accent-ink:#ffffff;
+    --shadow:0 8px 30px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--txt); transition:background .3s,color .3s;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);}
+  .hide{display:none !important}
+  button{font-family:inherit; cursor:pointer; border:none}
+  input,textarea,select{font-family:inherit}
+
+  /* LOCK */
+  #lock{position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
+  .lockbox{width:100%; max-width:360px; text-align:center}
+  .logo{width:72px;height:72px;margin:0 auto 18px;border-radius:22px;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;box-shadow:var(--shadow);}
+  .lockbox h1{font-size:26px;margin:0 0 6px;letter-spacing:-.5px}
+  .lockbox p{color:var(--muted);margin:0 0 26px;font-size:14px}
+  .pin-dots{display:flex;gap:14px;justify-content:center;margin:20px 0 26px}
+  .pin-dots span{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);transition:.15s}
+  .pin-dots span.on{background:var(--accent);border-color:var(--accent)}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:280px;margin:0 auto}
+  .key{height:66px;border-radius:50%;background:var(--card);color:var(--txt);font-size:24px;font-weight:600;border:1px solid var(--line);transition:.1s;}
+  .key:active{transform:scale(.94);background:var(--accent);color:var(--accent-ink)}
+  .key.fn{font-size:14px;font-weight:500;color:var(--muted);background:transparent;border-color:transparent}
+  .lock-msg{min-height:20px;color:#ef6b6b;font-size:13px;margin-top:16px}
+  .lock-hint{color:var(--muted);font-size:12px;margin-top:8px}
+
+  /* SHELL */
+  #app{max-width:680px;margin:0 auto;padding:0 16px 130px}
+  .topbar{position:sticky;top:0;background:var(--bg);z-index:20;display:flex;align-items:center;justify-content:space-between;padding:18px 2px 12px;}
+  .topbar .title{font-size:22px;font-weight:800;letter-spacing:-.5px}
+  .topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .iconbtn{width:42px;height:42px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--txt);font-size:18px;display:flex;align-items:center;justify-content:center}
+  .row{display:flex;gap:10px;align-items:center}
+
+  /* CARDS */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .card h2{font-size:15px;margin:0 0 14px;letter-spacing:-.2px}
+  .card h2 .muted{font-weight:400;color:var(--muted);font-size:13px}
+  .card.feature{background:linear-gradient(160deg,var(--card),var(--bg2));}
+
+  /* mood */
+  .moods{display:flex;justify-content:space-between;gap:6px}
+  .mood{flex:1;aspect-ratio:1;border-radius:14px;background:var(--bg2);border:1px solid var(--line);font-size:26px;display:flex;align-items:center;justify-content:center;transition:.12s}
+  .mood:active{transform:scale(.9)}
+  .mood.sel{background:var(--accent);border-color:var(--accent);transform:scale(1.04)}
+  .mood-labels{display:flex;justify-content:space-between;margin-top:6px}
+  .mood-labels span{flex:1;text-align:center;font-size:9.5px;color:var(--muted)}
+
+  .field{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:13px 14px;font-size:15px;resize:vertical;outline:none}
+  .field:focus{border-color:var(--accent)}
+  textarea.field{min-height:84px;line-height:1.5}
+
+  .btn{background:var(--accent);color:var(--accent-ink);border-radius:12px;padding:13px 16px;font-size:15px;font-weight:700;width:100%}
+  .btn:active{opacity:.85}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+  .chip{padding:8px 13px;border-radius:30px;background:var(--bg2);border:1px solid var(--line);font-size:13px;color:var(--muted);transition:.12s}
+  .chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+  .stat b{display:block;font-size:24px;font-weight:800}
+  .stat span{font-size:11px;color:var(--muted)}
+  .spark{display:flex;align-items:flex-end;gap:4px;height:60px;margin-top:6px}
+  .spark .bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:4px;opacity:.85}
+
+  /* entries */
+  .entry{border-left:2px solid var(--line);padding:0 0 16px 16px;position:relative}
+  .entry:before{content:"";position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+  .entry.win:before{background:#43c46b}
+  .entry .meta{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .entry .emoji{font-size:18px}
+  .entry .body{font-size:14px;line-height:1.5;margin:4px 0}
+  .entry .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .entry .tags span{font-size:10px;color:var(--muted);background:var(--bg2);padding:3px 8px;border-radius:20px;border:1px solid var(--line)}
+  .del{position:absolute;right:0;top:0;background:transparent;color:var(--muted);font-size:12px;border:none}
+
+  /* chat */
+  #chatlog{display:flex;flex-direction:column;gap:10px;max-height:48vh;overflow-y:auto;padding-right:2px}
+  .bubble{max-width:85%;padding:11px 14px;border-radius:16px;font-size:14px;line-height:1.5}
+  .bubble.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+  .bubble.ai{align-self:flex-start;background:var(--bg2);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .chatform{display:flex;gap:8px;margin-top:12px}
+  .chatform .field{flex:1}
+  .chatform .btn{width:auto;padding:13px 18px}
+  .typing{font-size:12px;color:var(--muted);font-style:italic}
+
+  /* shield / encounter cards */
+  .protocol{display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;margin-bottom:10px}
+  .protocol .n{flex:0 0 30px;height:30px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .protocol .t{font-size:13.5px;line-height:1.5}
+  .protocol .t b{display:block;margin-bottom:2px;font-size:14px}
+  .truth{font-size:16px;line-height:1.6;font-weight:600;text-align:center;padding:6px 4px}
+  .quote{border-left:3px solid var(--accent);padding:6px 0 6px 14px;margin:10px 0;font-size:13.5px;line-height:1.55;color:var(--muted)}
+  .quote b{color:var(--txt)}
+
+  /* URGE button */
+  .urge-fab{position:fixed;right:16px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:35;
+    width:64px;height:64px;border-radius:50%;background:#e23b3b;color:#fff;font-size:11px;font-weight:800;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    box-shadow:0 10px 26px rgba(226,59,59,.5);animation:pulse 2.4s infinite}
+  .urge-fab .ic{font-size:22px}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(226,59,59,.5)}70%{box-shadow:0 0 0 16px rgba(226,59,59,0)}100%{box-shadow:0 0 0 0 rgba(226,59,59,0)}}
+
+  /* nav */
+  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
+    width:calc(100% - 28px);max-width:660px;background:var(--card);border:1px solid var(--line);
+    border-radius:20px;display:flex;padding:6px;box-shadow:var(--shadow);z-index:30}
+  .nav button{flex:1;background:transparent;color:var(--muted);border-radius:14px;padding:9px 0;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
+  .nav button .ic{font-size:18px}
+  .nav button.on{background:var(--accent);color:var(--accent-ink)}
+  .page{display:none}.page.on{display:block;animation:fade .25s}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 10px}
+
+  /* modal / sheet */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:flex;align-items:flex-end;justify-content:center;padding:0}
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:22px 22px 0 0;width:100%;max-width:680px;padding:22px;max-height:90vh;overflow:auto}
+  .sheet h2{margin:0 0 16px;font-size:18px}
+  .label{font-size:12px;color:var(--muted);margin:14px 0 6px;display:block}
+  .seg{display:flex;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+  .seg button{flex:1;background:transparent;color:var(--muted);padding:9px;border-radius:9px;font-weight:600;font-size:13px}
+  .seg button.on{background:var(--accent);color:var(--accent-ink)}
+  .small{font-size:11.5px;color:var(--muted);line-height:1.5}
+  a{color:var(--txt)}
+
+  /* URGE FULLSCREEN OVERLAY */
+  #urge{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;padding:26px 22px calc(26px + env(safe-area-inset-bottom));overflow:auto}
+  #urge .ustep{flex:1;display:flex;flex-direction:column;justify-content:center;animation:fade .3s}
+  #urge h1{font-size:24px;line-height:1.3;margin:0 0 10px;letter-spacing:-.3px}
+  #urge p.sub{color:var(--muted);font-size:14px;margin:0 0 22px;line-height:1.5}
+  #urge .big-truth{font-size:22px;font-weight:700;line-height:1.45}
+  .breath{width:150px;height:150px;border-radius:50%;border:3px solid var(--accent);margin:24px auto;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);animation:breathe 8s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.05);opacity:1}}
+  #urge .ubtns{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .uprogress{display:flex;gap:6px;justify-content:center;margin-bottom:8px}
+  .uprogress span{width:26px;height:4px;border-radius:3px;background:var(--line)}
+  .uprogress span.on{background:var(--accent)}
+  .closex{position:absolute;top:calc(18px + env(safe-area-inset-top));right:18px;background:transparent;color:var(--muted);font-size:24px}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ============ LOCK ============ -->
+<div id="lock">
+  <div class="lockbox">
+    <div class="logo">◐</div>
+    <h1>MindSpace</h1>
+    <p id="lockSub">Enter your passcode</p>
+    <div class="pin-dots" id="dots"></div>
+    <div class="keypad" id="keypad"></div>
+    <div class="lock-msg" id="lockMsg"></div>
+    <div class="lock-hint" id="lockHint"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hide">
+  <div class="topbar">
+    <div>
+      <div class="title" id="greet">Hello</div>
+      <div class="sub" id="dayline"></div>
+    </div>
+    <div class="row">
+      <button class="iconbtn" id="themeBtn">☾</button>
+      <button class="iconbtn" id="settingsBtn">⚙</button>
+    </div>
+  </div>
+
+  <!-- ===== TODAY ===== -->
+  <div class="page on" id="page-today">
+    <div class="card feature">
+      <h2>Your strength today</h2>
+      <div class="stats">
+        <div class="stat"><b id="tCaught">0</b><span>urges caught</span></div>
+        <div class="stat"><b id="tClean">0</b><span>day streak clean</span></div>
+        <div class="stat"><b id="tGrat">0</b><span>gratitudes</span></div>
+      </div>
+      <div class="quote" id="dailyTruth" style="margin-top:16px"></div>
+    </div>
+
+    <div class="card">
+      <h2>How are you feeling right now?</h2>
+      <div class="moods" id="moodRow"></div>
+      <div class="mood-labels"><span>Awful</span><span>Low</span><span>Okay</span><span>Good</span><span>Great</span></div>
+    </div>
+
+    <div class="card">
+      <h2>What's on your mind? <span class="muted">— capture it before it vanishes</span></h2>
+      <textarea class="field" id="entryText" placeholder="Let it out. Private, only for you…"></textarea>
+      <div class="chips" id="tagChips" style="margin-top:12px"></div>
+      <button class="btn" id="saveEntry">Save to my journal</button>
+    </div>
+
+    <div class="card" id="insightCard">
+      <h2>A gentle reflection</h2>
+      <div class="bubble ai" id="insight" style="max-width:100%">Pick a mood and write a few words — I'll reflect something back for you.</div>
+    </div>
+  </div>
+
+  <!-- ===== SHIELD / ENCOUNTER ===== -->
+  <div class="page" id="page-shield">
+    <div class="card feature">
+      <h2>🛡 When temptation comes</h2>
+      <p class="small" style="margin:-6px 0 14px">Tap the red button anytime. We capture the thought, then redirect it — never suppress it.</p>
+      <button class="btn" id="openUrge2" style="background:#e23b3b;color:#fff">I'm feeling an urge — help me now</button>
+    </div>
+
+    <div class="card">
+      <h2>Your protocol — How to Encounter</h2>
+      <div id="protocolList"></div>
+    </div>
+
+    <div class="card">
+      <h2>How blessed I am <span class="muted">— see God's blessing</span></h2>
+      <div id="blessedList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Your gratitude — the opposite of lust</h2>
+      <div class="quote"><b>"Gratitude is the opposite of lust."</b><br>Lust says "I want." Gratitude says "I have."</div>
+      <div class="truth" id="gratShow" style="margin:14px 0"></div>
+      <button class="btn ghost" id="editGratBtn">Edit my gratitude</button>
+    </div>
+  </div>
+
+  <!-- ===== COMPANION ===== -->
+  <div class="page" id="page-agent">
+    <div class="card">
+      <h2>Your companion <span class="muted" id="aiMode"></span></h2>
+      <div id="chatlog"></div>
+      <div class="chatform">
+        <input class="field" id="chatInput" placeholder="Talk to me…" />
+        <button class="btn" id="chatSend">↑</button>
+      </div>
+      <div class="small" style="margin-top:10px">Private space. I listen and reflect, never judge. Not a substitute for professional care.</div>
+    </div>
+  </div>
+
+  <!-- ===== JOURNAL ===== -->
+  <div class="page" id="page-journal">
+    <div class="card">
+      <h2>This week</h2>
+      <div class="stats">
+        <div class="stat"><b id="sEntries">0</b><span>entries</span></div>
+        <div class="stat"><b id="sStreak">0</b><span>day streak</span></div>
+        <div class="stat"><b id="sAvg">–</b><span>avg mood</span></div>
+      </div>
+      <div class="spark" id="spark" style="margin-top:18px"></div>
+      <div class="mood-labels" id="sparkLabels" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <h2>Your journal</h2>
+      <div id="timeline"></div>
+    </div>
+  </div>
+
+  <!-- nav -->
+  <div class="nav">
+    <button class="on" data-page="today"><span class="ic">◐</span>Today</button>
+    <button data-page="shield"><span class="ic">🛡</span>Shield</button>
+    <button data-page="agent"><span class="ic">❀</span>Companion</button>
+    <button data-page="journal"><span class="ic">❖</span>Journal</button>
+  </div>
+
+  <!-- URGE FAB -->
+  <button class="urge-fab" id="urgeFab"><span class="ic">🛡</span>URGE</button>
+</div>
+
+<!-- ============ URGE OVERLAY ============ -->
+<div id="urge" class="hide">
+  <button class="closex" id="urgeClose">✕</button>
+  <div class="uprogress" id="uprog"></div>
+  <div class="ustep" id="ustep"></div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="modal hide" id="settingsModal">
+  <div class="sheet">
+    <h2>Settings</h2>
+
+    <span class="label">Theme</span>
+    <div class="seg" id="themeSeg"><button data-t="dark">Dark</button><button data-t="light">Light</button></div>
+
+    <span class="label">Your name</span>
+    <input class="field" id="nameInput" placeholder="What should I call you?" />
+
+    <span class="label">My gratitude line (your strongest weapon)</span>
+    <textarea class="field" id="gratInput" placeholder="e.g. When I was alone and in pain, God stood with me. He loves me. I am not alone."></textarea>
+
+    <span class="label">Daily reminder times (your protocol pop-ups)</span>
+    <div id="reminderList"></div>
+    <div class="row" style="gap:8px;margin-top:8px">
+      <input class="field" id="newReminder" type="time" style="flex:1" />
+      <button class="btn ghost" id="addReminder" style="width:auto;padding:13px 16px">Add</button>
+    </div>
+    <div class="small" style="margin-top:6px">While the app is open, you'll get a gentle reminder of your truth at these times. (For lock-screen alerts when closed, add to iPhone Home Screen — see SETUP.)</div>
+
+    <span class="label">Companion mode</span>
+    <div class="seg" id="aiSeg"><button data-m="builtin">Built-in</button><button data-m="api">Real AI</button></div>
+    <span class="label">OpenAI API key (optional)</span>
+    <input class="field" id="apiKeyInput" type="password" placeholder="sk-…" autocomplete="off" />
+
+    <span class="label">Change passcode</span>
+    <input class="field" id="newPin" type="tel" inputmode="numeric" maxlength="6" placeholder="New 4–6 digit passcode" />
+
+    <span class="label">Your data</span>
+    <div class="row" style="gap:8px">
+      <button class="btn ghost" id="exportBtn" style="flex:1">Export backup</button>
+      <button class="btn ghost" id="wipeBtn" style="flex:1;color:#ef6b6b;border-color:#ef6b6b">Erase all</button>
+    </div>
+
+    <div style="height:18px"></div>
+    <button class="btn" id="saveSettings">Save settings</button>
+    <button class="btn ghost" id="closeSettings" style="margin-top:8px">Close</button>
+    <button class="btn ghost" id="lockNow" style="margin-top:8px">Lock app now</button>
+    <p class="small" style="margin-top:16px;text-align:center">MindSpace • private on your device 🔒</p>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   MindSpace — private mind shield. Content built ONLY from your notes.
+===================================================================== */
+const S={pin:'ms_pin',store:'ms_data',theme:'ms_theme',name:'ms_name',aiMode:'ms_aimode',apiKey:'ms_apikey',grat:'ms_grat',reminders:'ms_rem',urgeAlt:'ms_urgealt'};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+/* ===== YOUR NOTES → app content (nothing from outside) ===== */
+const DEFAULT_GRAT = "When no one was with me — when I was in pain and standing alone — God was there. He helped me. He loves me. He has a heart for me. I am not alone.";
+
+const PROTOCOL = [
+  {t:"God gave you a heart to love", d:"Make it a heart of devotion. No place for doubt. Don't destroy your kindness, love and forgiveness."},
+  {t:"Lustful thoughts are the enemy of your growth", d:"It's okay that you watched a lot in the last 5–10 years. Leave it. Focus on the present & the future."},
+  {t:"Don't give your temple away", d:"This place — these hours — are what God gave you for love, kindness and pureness. God has a heart for me."},
+  {t:"Redirect the thought & feeling — don't suppress", d:"A trigger can be any image or video you watched before. Don't ignore it (it comes back bigger). Acknowledge it, then redirect the energy to the right direction."},
+  {t:"Build a solid purpose & identity", d:"A clear purpose and identity becomes the road-blocker for the urge. Remember who you are and why you're doing this."},
+  {t:"See every girl as mother or sister", d:"A girl is not an object to use or disrespect. She should be cared for, respected and protected. Look at every girl as mother or sister."},
+];
+const BLESSED = [
+  {t:"God made you like Himself", d:"You carry His image. You are made for love, kindness and pureness."},
+  {t:"When temptation comes, remember", d:"God has a heart for you. He loves you. He calls you to be pure — you were never meant to stand alone."},
+  {t:"Think what God did for you", d:"When no one was with you, when you were in pain or standing alone — He was there. Thank Him. Gratitude is the opposite of lust."},
+  {t:"Despite the failure, He has a heart for you", d:"Your response to temptation = ACCEPT it + Gratitude. Don't fight by hating yourself; you don't have to be okay with falling — but be gentle and get back up."},
+];
+
+/* ===== DATA ===== */
+function getData(){try{return JSON.parse(localStorage.getItem(S.store))||{entries:[],chat:[]}}catch(e){return{entries:[],chat:[]}}}
+function setData(d){localStorage.setItem(S.store,JSON.stringify(d)); /* saveCloud(d) */}
+async function saveCloud(d){/* wire later — see SETUP.md */}
+const getGrat=()=>localStorage.getItem(S.grat)||DEFAULT_GRAT;
+const getReminders=()=>{try{return JSON.parse(localStorage.getItem(S.reminders))||["08:00","22:00"]}catch(e){return["08:00","22:00"]}};
+
+/* ===== THEME ===== */
+function applyTheme(t){document.body.dataset.theme=t;$('#themeBtn').textContent=t==='dark'?'☾':'☀';
+  $('meta[name=theme-color]').setAttribute('content',t==='dark'?'#0a0a0a':'#f4f4f5');localStorage.setItem(S.theme,t);}
+applyTheme(localStorage.getItem(S.theme)||'dark');
+
+/* ===== LOCK ===== */
+let pinBuf='';const hasPin=()=>!!localStorage.getItem(S.pin);
+function renderDots(len){$('#dots').innerHTML=Array.from({length:len||4},(_,i)=>`<span class="${i<pinBuf.length?'on':''}"></span>`).join('')}
+function buildKeypad(){const k=['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  $('#keypad').innerHTML=k.map(x=>x===''?`<button class="key fn" disabled style="visibility:hidden"></button>`:x==='⌫'?`<button class="key fn" data-k="del">⌫</button>`:`<button class="key" data-k="${x}">${x}</button>`).join('')}
+function setupMode(){const s=!hasPin();$('#lockSub').textContent=s?'Create a passcode (4–6 digits)':'Enter your passcode';
+  $('#lockHint').textContent=s?"You'll use this to unlock MindSpace.":'';renderDots(s?4:(localStorage.getItem(S.pin)?.length||4))}
+let pendingPin=null,advanceTimer=null;
+function pressKey(k){$('#lockMsg').textContent='';
+  if(k==='del'){pinBuf=pinBuf.slice(0,-1);renderDots();return}
+  if(pinBuf.length>=6)return; pinBuf+=k; renderDots();
+  if(!hasPin()){
+    if(pendingPin===null){ if(pinBuf.length===4) tentativeAdvance(); }
+    else if(pinBuf.length===pendingPin.length){ pinBuf===pendingPin?commitPin(pendingPin):(fail("Passcodes didn't match. Try again."),pendingPin=null,setupMode()); }
+  }else if(pinBuf.length===localStorage.getItem(S.pin).length){ pinBuf===localStorage.getItem(S.pin)?unlock():fail('Wrong passcode.'); }
+}
+function tentativeAdvance(){clearTimeout(advanceTimer);advanceTimer=setTimeout(()=>{pendingPin=pinBuf;pinBuf='';$('#lockSub').textContent='Confirm your passcode';$('#lockHint').textContent='';renderDots(pendingPin.length)},650)}
+function commitPin(p){localStorage.setItem(S.pin,p);pendingPin=null;pinBuf='';unlock()}
+function fail(m){$('#lockMsg').textContent=m;pinBuf='';const b=$('.lockbox');b.style.animation='none';void b.offsetWidth;b.style.animation='shake .35s';renderDots()}
+const sc=document.createElement('style');sc.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}';document.head.appendChild(sc);
+function unlock(){pinBuf='';pendingPin=null;$('#lock').classList.add('hide');$('#app').classList.remove('hide');bootApp()}
+$('#keypad').addEventListener('click',e=>{const k=e.target.dataset.k;if(k)pressKey(k)});
+document.addEventListener('keydown',e=>{if($('#lock').classList.contains('hide'))return;if(/^[0-9]$/.test(e.key))pressKey(e.key);if(e.key==='Backspace')pressKey('del')});
+
+/* ===== BOOT ===== */
+const MOODS=['😣','😔','😐','🙂','😄'],MOOD_VAL={0:1,1:2,2:3,3:4,4:5};
+const DEFAULT_TAGS=['urge','triggered','tired','lonely','anxious','grateful','calm','work','devotion','strong'];
+let selectedMood=null, selectedTags=new Set();
+
+function bootApp(){
+  const name=localStorage.getItem(S.name)||'';
+  const h=new Date().getHours(), part=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  $('#greet').textContent=name?`${part}, ${name}`:part;
+  $('#dayline').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const mode=localStorage.getItem(S.aiMode)||'builtin';
+  $('#aiMode').textContent=mode==='api'?'— powered by AI':'— supportive mode';
+  buildMoods();buildTags();renderTimeline();renderInsights();renderChat();renderShield();renderTodayStats();
+  startReminderLoop();
+  // one-tap shortcut: if URL ends with #urge (Apple Watch / Shortcuts), open the shield flow immediately
+  if(location.hash==='#urge'){ setTimeout(openUrge, 150); }
+}
+
+function buildMoods(){$('#moodRow').innerHTML=MOODS.map((m,i)=>`<button class="mood" data-i="${i}">${m}</button>`).join('');
+  $$('#moodRow .mood').forEach(b=>b.onclick=()=>{selectedMood=+b.dataset.i;$$('#moodRow .mood').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');liveInsight()})}
+function buildTags(){$('#tagChips').innerHTML=DEFAULT_TAGS.map(t=>`<button class="chip" data-t="${t}">${t}</button>`).join('');
+  $$('#tagChips .chip').forEach(b=>b.onclick=()=>{const t=b.dataset.t;selectedTags.has(t)?(selectedTags.delete(t),b.classList.remove('on')):(selectedTags.add(t),b.classList.add('on'))})}
+
+/* ===== SAVE ENTRY ===== */
+$('#saveEntry').onclick=()=>{
+  const text=$('#entryText').value.trim();
+  if(selectedMood===null&&!text){flash('#saveEntry','Pick a mood or write something');return}
+  const d=getData();
+  d.entries.unshift({id:Date.now(),t:Date.now(),mood:selectedMood,text,tags:[...selectedTags]});
+  setData(d);$('#entryText').value='';selectedMood=null;selectedTags.clear();
+  $$('#moodRow .mood').forEach(x=>x.classList.remove('sel'));$$('#tagChips .chip').forEach(x=>x.classList.remove('on'));
+  $('#insight').textContent=pickInsight(getData().entries[0]);
+  renderTimeline();renderInsights();renderTodayStats();flash('#saveEntry','Saved ✓');
+};
+function flash(sel,msg){const el=$(sel),o=el.textContent;el.textContent=msg;setTimeout(()=>el.textContent=o,1300)}
+
+function liveInsight(){if(selectedMood===null)return;const map=[
+  "I'm sorry it feels this heavy. You don't carry it alone — God has a heart for you. What happened?",
+  "A low moment is allowed. Acknowledge it, don't suppress it. What's underneath?",
+  "An in-between day. Want to capture what you're feeling before it fades?",
+  "Glad there's some lightness. Thank God for it — gratitude keeps you strong.",
+  "Feeling great. Remember what helped, so you can return to it."];$('#insight').textContent=map[selectedMood]}
+function pickInsight(e){const b={low:["Naming the feeling is brave. God stood with you before; He stands with you now.","Be as gentle with yourself as God is with you.","A hard day doesn't erase your progress — you showed up."],
+  mid:["Steady is okay. You checked in — that's an act of care.","Noticing the ordinary is part of guarding your mind."],
+  high:["Beautiful. Thank God and remember what made today good.","Savor it — you're building a pure, strong life."]};
+  let k='mid';if(e&&e.mood!=null)k=e.mood<=1?'low':e.mood>=3?'high':'mid';const a=b[k];return a[Math.floor(Math.random()*a.length)]}
+
+/* ===== SHIELD PAGE ===== */
+function renderShield(){
+  $('#protocolList').innerHTML=PROTOCOL.map((p,i)=>`<div class="protocol"><div class="n">${i+1}</div><div class="t"><b>${p.t}</b>${p.d}</div></div>`).join('');
+  $('#blessedList').innerHTML=BLESSED.map((p)=>`<div class="protocol"><div class="n">✦</div><div class="t"><b>${p.t}</b>${p.d}</div></div>`).join('');
+  $('#gratShow').textContent='“'+getGrat()+'”';
+}
+$('#editGratBtn').onclick=()=>{openSettings();setTimeout(()=>$('#gratInput').focus(),200)};
+$('#openUrge2').onclick=openUrge;
+
+/* ===== TODAY STATS ===== */
+function renderTodayStats(){
+  const d=getData();
+  $('#tCaught').textContent=d.entries.filter(e=>e.urge).length;
+  $('#tGrat').textContent=d.entries.filter(e=>e.gratitude).length;
+  // clean streak: days with no relapse marked
+  let streak=0;const now=Date.now();
+  const relapseDays=new Set(d.entries.filter(e=>e.relapse).map(e=>new Date(e.t).toDateString()));
+  for(let i=0;i<365;i++){const day=new Date(now-i*864e5).toDateString();if(relapseDays.has(day))break;streak++}
+  $('#tClean').textContent=streak;
+  // rotating daily truth from your notes
+  const truths=["“God has a heart for me.”","“Gratitude is the opposite of lust.”","“My temple is for love, kindness and pureness.”","“I was never meant to stand alone — He is with me.”","“Redirect the thought — never suppress it.”","“Every girl: care, respect, protect — mother or sister.”"];
+  $('#dailyTruth').innerHTML='<b>'+truths[new Date().getDate()%truths.length]+'</b>';
+}
+
+/* ===== JOURNAL / TIMELINE ===== */
+function renderTimeline(){const d=getData();
+  if(!d.entries.length){$('#timeline').innerHTML='<div class="empty">No entries yet. Your reflections and caught urges will appear here.</div>';return}
+  $('#timeline').innerHTML=d.entries.map(e=>{const dt=new Date(e.t);
+    const when=dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' · '+dt.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    const emoji=e.urge?'🛡':(e.mood!=null?MOODS[e.mood]:'·');
+    const tags=(e.tags||[]).map(t=>`<span>${t}</span>`).join('');
+    const label=e.urge?'<span style="color:#43c46b;font-weight:700">Urge caught & redirected</span><br>':'';
+    return `<div class="entry ${e.urge?'win':''}"><button class="del" data-id="${e.id}">delete</button>
+      <div class="meta">${when}</div><div><span class="emoji">${emoji}</span></div>
+      ${label}${e.text?`<div class="body">${escapeHtml(e.text)}</div>`:''}${tags?`<div class="tags">${tags}</div>`:''}</div>`}).join('');
+  $$('#timeline .del').forEach(b=>b.onclick=()=>{if(!confirm('Delete this entry?'))return;const d=getData();d.entries=d.entries.filter(x=>x.id!=b.dataset.id);setData(d);renderTimeline();renderInsights();renderTodayStats()})}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function renderInsights(){const d=getData(),now=Date.now(),week=7*864e5;
+  const recent=d.entries.filter(e=>now-e.t<week);$('#sEntries').textContent=recent.length;
+  let streak=0;const days=new Set(d.entries.map(e=>new Date(e.t).toDateString()));
+  for(let i=0;i<365;i++){const dd=new Date(now-i*864e5).toDateString();if(days.has(dd))streak++;else if(i>0)break}
+  $('#sStreak').textContent=streak;
+  const moods=recent.filter(e=>e.mood!=null).map(e=>MOOD_VAL[e.mood]);
+  $('#sAvg').textContent=moods.length?(moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1):'–';
+  const labels=[],vals=[];
+  for(let i=6;i>=0;i--){const day=new Date(now-i*864e5);labels.push(day.toLocaleDateString(undefined,{weekday:'narrow'}));
+    const dm=d.entries.filter(e=>new Date(e.t).toDateString()===day.toDateString()&&e.mood!=null).map(e=>MOOD_VAL[e.mood]);
+    vals.push(dm.length?dm.reduce((a,b)=>a+b,0)/dm.length:0)}
+  $('#spark').innerHTML=vals.map(v=>`<div class="bar" style="height:${v?(v/5*100):4}%;opacity:${v?.85:.2}"></div>`).join('');
+  $('#sparkLabels').innerHTML=labels.map(l=>`<span>${l}</span>`).join('')}
+
+/* =====================================================================
+   URGE FLOW — alternates: Gratitude-first  ↔  Breathe + truth-first
+   then Capture the thought → Redirect (not suppress) → Done
+===================================================================== */
+let uState={step:0, flow:'A', captured:''};
+function openUrge(){
+  $('#settingsModal').classList.add('hide');
+  // alternate flow each time
+  const last=localStorage.getItem(S.urgeAlt)||'B';
+  uState={step:0, flow:last==='A'?'B':'A', captured:''};
+  localStorage.setItem(S.urgeAlt,uState.flow);
+  $('#urge').classList.remove('hide');
+  renderUrge();
+}
+$('#urgeFab').onclick=openUrge;
+$('#urgeClose').onclick=()=>$('#urge').classList.add('hide');
+
+function urgeSteps(){
+  const grat=getGrat();
+  const gratStep={title:'Breathe. Remember your gratitude.', render:`
+    <div class="big-truth">“${escapeHtml(grat)}”</div>
+    <p class="sub" style="margin-top:18px">Gratitude is the opposite of lust. Lust says "I want." You already <b>have</b>.</p>`,
+    btn:'I feel it →'};
+  const breatheStep={title:'You are safe. God has a heart for you.', render:`
+    <div class="breath">breathe in… out…</div>
+    <div class="big-truth" style="text-align:center">“God has a heart for me. I was never meant to stand alone.”</div>`,
+    btn:'I am steadier →'};
+  const captureStep={title:'Capture the thought — before it vanishes.', render:`
+    <p class="sub">Don't suppress it. Name it. Writing it down takes its power away. What image / thought / feeling came?</p>
+    <textarea class="field" id="uCapture" style="min-height:120px" placeholder="The thought / trigger that came…">${escapeHtml(uState.captured)}</textarea>`,
+    btn:'I named it →'};
+  const redirectStep={title:'Now redirect the energy — don\'t fight it.', render:`
+    <div class="protocol"><div class="n">1</div><div class="t"><b>Acknowledge</b>This is an old trigger from before. It's allowed to come. I see it.</div></div>
+    <div class="protocol"><div class="n">2</div><div class="t"><b>Don't suppress</b>If I push it down, it returns bigger. I let it pass like a wave.</div></div>
+    <div class="protocol"><div class="n">3</div><div class="t"><b>Redirect</b>Move the energy: stand up, walk, pray, do one task, message a friend, or open my devotion.</div></div>
+    <div class="protocol"><div class="n">4</div><div class="t"><b>Purpose = road-blocker</b>Remember who I am and why. My temple is for love, kindness, pureness.</div></div>`,
+    btn:'I\'m redirecting →'};
+  const doneStep={title:'You caught it. That\'s a victory. 🛡', render:`
+    <div class="big-truth" style="text-align:center">“Despite the failure, God has a heart for me.”</div>
+    <p class="sub" style="text-align:center;margin-top:16px">Every urge you catch makes the road-block stronger. He is proud of you. So am I.</p>`,
+    btn:'Save this victory & close',
+    onBtn:saveUrgeVictory};
+  // Flow A: gratitude first. Flow B: breathe first.
+  return uState.flow==='A'
+    ? [gratStep, captureStep, redirectStep, doneStep]
+    : [breatheStep, captureStep, redirectStep, doneStep];
+}
+function renderUrge(){
+  const steps=urgeSteps(), s=steps[uState.step];
+  $('#uprog').innerHTML=steps.map((_,i)=>`<span class="${i<=uState.step?'on':''}"></span>`).join('');
+  $('#ustep').innerHTML=`<div><h1>${s.title}</h1>${s.render}
+    <div class="ubtns"><button class="btn" id="uNext">${s.btn}</button>
+    ${uState.step>0?'<button class="btn ghost" id="uBack">Back</button>':''}</div></div>`;
+  $('#uNext').onclick=()=>{
+    // capture text if on capture step
+    const cap=$('#uCapture'); if(cap) uState.captured=cap.value;
+    if(s.onBtn){ s.onBtn(); return; }
+    uState.step++; renderUrge();
+  };
+  if($('#uBack')) $('#uBack').onclick=()=>{const cap=$('#uCapture'); if(cap) uState.captured=cap.value; uState.step--; renderUrge()};
+}
+function saveUrgeVictory(){
+  const d=getData();
+  d.entries.unshift({id:Date.now(),t:Date.now(),mood:null,urge:true,gratitude:true,
+    text:uState.captured?('Trigger captured: '+uState.captured):'Urge caught and redirected.',
+    tags:['urge','strong']});
+  setData(d);
+  $('#urge').classList.add('hide');
+  renderTimeline();renderInsights();renderTodayStats();
+}
+
+/* ===== COMPANION ===== */
+function renderChat(){const d=getData();
+  if(!d.chat||!d.chat.length){d.chat=[{role:'ai',text:"Hi. This is a safe, private space. When the urge or a heavy thought comes, you can tell me — or tap the red URGE button anytime. How are you really doing?"}];setData(d)}
+  $('#chatlog').innerHTML=d.chat.map(m=>`<div class="bubble ${m.role==='ai'?'ai':'me'}">${escapeHtml(m.text)}</div>`).join('');
+  $('#chatlog').scrollTop=$('#chatlog').scrollHeight}
+$('#chatSend').onclick=sendChat;$('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+async function sendChat(){const txt=$('#chatInput').value.trim();if(!txt)return;
+  const d=getData();d.chat.push({role:'me',text:txt});setData(d);$('#chatInput').value='';renderChat();
+  const mode=localStorage.getItem(S.aiMode)||'builtin',key=localStorage.getItem(S.apiKey);
+  $('#chatlog').insertAdjacentHTML('beforeend','<div class="typing" id="typing">companion is reflecting…</div>');$('#chatlog').scrollTop=$('#chatlog').scrollHeight;
+  let reply;
+  if(mode==='api'&&key){reply=await askOpenAI(txt,d.chat).catch(()=>null);if(!reply)reply=builtinReply(txt)+"\n\n(Couldn't reach AI — used supportive mode.)"}
+  else{await new Promise(r=>setTimeout(r,450));reply=builtinReply(txt)}
+  $('#typing')?.remove();const d2=getData();d2.chat.push({role:'ai',text:reply});setData(d2);renderChat()}
+
+function builtinReply(t){const x=t.toLowerCase();
+  if(/(urge|tempt|trigger|porn|lust|watch|horny|relapse)/.test(x))
+    return "Thank you for telling me instead of acting on it — that's already winning. Tap the red URGE button and let's capture this thought, then redirect it together. Remember: gratitude is the opposite of lust. What's one thing God did for you that you're grateful for right now?";
+  if(/(sad|down|cry|hopeless|empty|depress)/.test(x)) return "I hear the heaviness. You don't have to fix it now — let it be felt, don't suppress it. God stood with you when you were alone before. What's underneath this?";
+  if(/(anx|nervous|panic|worri|scared|overwhelm|stress)/.test(x)) return "Let's slow down together. One slow breath. The thought is loud but it will pass like a wave. What feels most urgent right now?";
+  if(/(lonely|alone|isolat|nobody)/.test(x)) return "You were never meant to stand alone — and you're not. He has a heart for you, and I'm here. What kind of connection are you missing?";
+  if(/(tired|exhaust|drained|sleep)/.test(x)) return "Tiredness is often when the old triggers sneak in. Be gentle, rest is not failure. What would feel like real care right now?";
+  if(/(happy|good|great|grateful|proud|strong|win|clean)/.test(x)) return "That's wonderful — hold onto it. Thank God for it; gratitude builds your road-block stronger. What made this possible?";
+  const g=["Thank you for sharing that. Can you say more about what it feels like in your body or mind?","I'm listening. What's the hardest part of this right now?","I'm holding space for you. Do you want to vent, understand, or make a plan?"];
+  return g[Math.floor(Math.random()*g.length)]}
+
+async function askOpenAI(userText,history){const key=localStorage.getItem(S.apiKey);
+  const grat=getGrat();
+  const msgs=[{role:'system',content:"You are MindSpace, a warm, faith-respecting companion helping the user overcome compulsive porn/lust urges. Their own framework: gratitude is the opposite of lust; redirect thoughts, never suppress; God has a heart for them; see women as mothers/sisters to respect and protect; build purpose & identity as a road-block. Their personal gratitude: \""+grat+"\". Listen deeply, reflect feelings, ask one gentle question, never shame. Keep replies to 2-4 sentences. Encourage professional help if there's risk of harm."},
+    ...history.slice(-10).map(m=>({role:m.role==='ai'?'assistant':'user',content:m.text}))];
+  const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:'gpt-4o-mini',messages:msgs,max_tokens:220,temperature:0.8})});
+  const data=await res.json();return data.choices?.[0]?.message?.content?.trim()}
+
+/* ===== REMINDERS (in-app, gentle) ===== */
+let reminderTimer=null,lastFired='';
+function startReminderLoop(){clearInterval(reminderTimer);
+  reminderTimer=setInterval(()=>{
+    const now=new Date();const hm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    const key=now.toDateString()+hm;
+    if(getReminders().includes(hm)&&lastFired!==key){lastFired=key;fireReminder()}
+  },20000)}
+function fireReminder(){
+  const truths=["“God has a heart for me.”","“Gratitude is the opposite of lust — I have.”","“My temple is for love, kindness and pureness.”","“Redirect — never suppress.”","“I was never meant to stand alone.”"];
+  const msg=truths[Math.floor(Math.random()*truths.length)]+"\n\nTap your gratitude. See how blessed you are today.";
+  if('Notification'in window&&Notification.permission==='granted'){new Notification('MindSpace',{body:msg})}
+  else{const o=$('#dailyTruth');if(o){o.style.transition='none';o.style.background='var(--accent)';o.style.color='var(--accent-ink)';setTimeout(()=>{o.style.transition='all .8s';o.style.background='';o.style.color=''},80)}}
+}
+
+/* ===== NAV + SETTINGS ===== */
+$$('.nav button').forEach(b=>b.onclick=()=>{$$('.nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  $$('.page').forEach(p=>p.classList.remove('on'));$('#page-'+b.dataset.page).classList.add('on');
+  if(b.dataset.page==='journal'){renderInsights();renderTimeline()}
+  if(b.dataset.page==='shield')renderShield();
+  if(b.dataset.page==='today')renderTodayStats();
+  window.scrollTo(0,0)});
+$('#themeBtn').onclick=()=>applyTheme(document.body.dataset.theme==='dark'?'light':'dark');
+
+function renderReminderList(){const r=getReminders();
+  $('#reminderList').innerHTML=r.length?r.map(t=>`<span class="chip on" data-r="${t}" style="cursor:pointer">${t} ✕</span>`).join(' '):'<span class="small">No reminders set.</span>';
+  $$('#reminderList .chip').forEach(c=>c.onclick=()=>{const nr=getReminders().filter(x=>x!==c.dataset.r);localStorage.setItem(S.reminders,JSON.stringify(nr));renderReminderList()})}
+$('#addReminder').onclick=()=>{const v=$('#newReminder').value;if(!v)return;const r=getReminders();if(!r.includes(v)){r.push(v);r.sort();localStorage.setItem(S.reminders,JSON.stringify(r))}renderReminderList()};
+
+function openSettings(){$('#settingsModal').classList.remove('hide');
+  const mode=localStorage.getItem(S.aiMode)||'builtin';
+  $$('#aiSeg button').forEach(x=>x.classList.toggle('on',x.dataset.m===mode));
+  $$('#themeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.t===document.body.dataset.theme));
+  $('#apiKeyInput').value=localStorage.getItem(S.apiKey)||'';
+  $('#nameInput').value=localStorage.getItem(S.name)||'';
+  $('#gratInput').value=getGrat();
+  renderReminderList();
+  if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();
+}
+$('#settingsBtn').onclick=openSettings;
+$('#closeSettings').onclick=()=>$('#settingsModal').classList.add('hide');
+$('#settingsModal').addEventListener('click',e=>{if(e.target.id==='settingsModal')$('#settingsModal').classList.add('hide')});
+$$('#themeSeg button').forEach(b=>b.onclick=()=>{applyTheme(b.dataset.t);$$('#themeSeg button').forEach(x=>x.classList.toggle('on',x===b))});
+$$('#aiSeg button').forEach(b=>b.onclick=()=>{$$('#aiSeg button').forEach(x=>x.classList.toggle('on',x===b))});
+
+$('#saveSettings').onclick=()=>{
+  localStorage.setItem(S.name,$('#nameInput').value.trim());
+  const g=$('#gratInput').value.trim();if(g)localStorage.setItem(S.grat,g);else localStorage.removeItem(S.grat);
+  const m=$('#aiSeg .on')?.dataset.m||'builtin';localStorage.setItem(S.aiMode,m);
+  const key=$('#apiKeyInput').value.trim();key?localStorage.setItem(S.apiKey,key):localStorage.removeItem(S.apiKey);
+  const np=$('#newPin').value.trim();
+  if(np){if(/^\d{4,6}$/.test(np)){localStorage.setItem(S.pin,np);$('#newPin').value='';alert('Passcode updated.')}else{alert('Passcode must be 4–6 digits.');return}}
+  $('#aiMode').textContent=m==='api'?'— powered by AI':'— supportive mode';
+  bootApp();$('#settingsModal').classList.add('hide');
+};
+$('#lockNow').onclick=()=>{$('#settingsModal').classList.add('hide');$('#app').classList.add('hide');$('#lock').classList.remove('hide');setupMode();renderDots()};
+$('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({data:getData(),grat:getGrat(),reminders:getReminders()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mindspace-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()};
+$('#wipeBtn').onclick=()=>{if(!confirm('Erase ALL entries, chats and settings? Cannot be undone.'))return;if(!confirm('Really sure? Export a backup first.'))return;Object.values(S).forEach(k=>localStorage.removeItem(k));location.reload()};
+
+/* ===== INIT ===== */
+buildKeypad();setupMode();renderDots();
+</script>
+</body>
+</html>
