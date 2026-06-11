@@ -546,7 +546,11 @@ const SPLASH_QUOTES=[
   ["Despite the fall, He has a heart for you.","Get back up. You are loved."],
   ["Peace comes from within.","Do not seek it without."],
   ["Every moment is a fresh beginning.","Breathe and start again."],
-  ["Strength grows in the moments you think you can't go on.","Keep pushing forward."]
+  ["Strength grows in the moments you think you can't go on.","Keep pushing forward."],
+  ["When you feel attracted, realize it is just lust.","God is inside her too. See her as a sister or friend."],
+  ["Let go of the desire to own everything you see.","True peace comes from detachment."],
+  ["Every beautiful girl is not yours to have.","One lustful look can destroy all your progress."],
+  ["This material body is just a layer of skin.","Beneath it, all are made of the same elements. See the soul."]
 ];
 const SPLASH_IMAGES = [
   "https://images.unsplash.com/photo-1506744626753-143683980b43?auto=format&fit=crop&w=800&q=80",
@@ -556,9 +560,10 @@ const SPLASH_IMAGES = [
   "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=800&q=80"
 ];
 function showSplash(){
-  const day = new Date().getDate();
-  const q=SPLASH_QUOTES[day%SPLASH_QUOTES.length];
-  const bg=SPLASH_IMAGES[day%SPLASH_IMAGES.length];
+  const qIndex = Math.floor(Math.random() * SPLASH_QUOTES.length);
+  const bgIndex = Math.floor(Math.random() * SPLASH_IMAGES.length);
+  const q = SPLASH_QUOTES[qIndex];
+  const bg = SPLASH_IMAGES[bgIndex];
   $('#splashQuote').textContent='“'+q[0]+'”';
   $('#splashSub').textContent=q[1];
   $('#splash').style.backgroundImage = `linear-gradient(rgba(10,10,20,0.7), rgba(10,10,20,0.85)), url('${bg}')`;
@@ -650,7 +655,17 @@ function renderTodayStats(){
   if(streak === 0 && dEntries.some(e=>e.relapse)) streak = 1;
   $('#tClean').textContent=streak;
   // rotating daily truth from your notes
-  const truths=["“God has a heart for me.”","“Gratitude is the opposite of lust.”","“My temple is for love, kindness and pureness.”","“I was never meant to stand alone — He is with me.”","“Redirect the thought — never suppress it.”","“Every girl: care, respect, protect — mother or sister.”"];
+  const truths=[
+    "“God has a heart for me.”",
+    "“Gratitude is the opposite of lust.”",
+    "“My temple is for love, kindness and pureness.”",
+    "“I was never meant to stand alone — He is with me.”",
+    "“Redirect the thought — never suppress it.”",
+    "“Every girl: care, respect, protect — mother or sister.”",
+    "“Every beautiful girl is not yours. Guard your progress.”",
+    "“Beneath the skin, we are all the same elements.”",
+    "“Let go of the desire to own everything you see.”"
+  ];
   $('#dailyTruth').innerHTML='<b>'+truths[new Date().getDate()%truths.length]+'</b>';
 }
 
@@ -695,7 +710,9 @@ const ACCEPT_CARDS = [
   "I have fallen before, and that is part of being human. Krishna's love for me does not depend on me being perfect.",
   "Krishna gave me a heart to love. Even when no one stayed with me, even when I stood alone in pain — He was with me, and He still is.",
   "Despite my failures, Radharani and Krishna have a heart for me. I am accepted, not condemned.",
-  "I accept this feeling without fighting or hating myself. Acceptance, not shame, is how I get back up."
+  "I accept this feeling without fighting or hating myself. Acceptance, not shame, is how I get back up.",
+  "I naturally feel attracted, but this is just lust. Her body is holy, God is inside her too. I choose to see her as a sister or friend.",
+  "In this material world everyone is flesh and blood. After the first layer of skin, we are all made of the same elements. I will not be fooled by the material body."
 ];
 // GRATITUDE seeds — your notes, Krishna/Radharani
 const GRAT_SEEDS = [
