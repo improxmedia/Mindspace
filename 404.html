@@ -45,8 +45,8 @@ window.FIREBASE_CONFIG = {
   button{font-family:inherit; cursor:pointer; border:none}
   input,textarea,select{font-family:inherit}
 
-  /* LOCK */
-  #lock{position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
+  /* LOCK & SIGNIN */
+  #lock, #signin{position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
   .lockbox{width:100%; max-width:360px; text-align:center}
   .logo{width:72px;height:72px;margin:0 auto 18px;border-radius:22px;background:var(--accent);color:var(--accent-ink);
     display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;box-shadow:var(--shadow);}
@@ -557,12 +557,27 @@ const SPLASH_QUOTES=[
   ["When you stood alone, He was there.","Radharani's mercy never leaves you."],
   ["See her as mother, as sister.","Protect, respect — never use."],
   ["Redirect — never suppress.","Let it pass like a wave."],
-  ["Despite the fall, He has a heart for you.","Get back up. You are loved."]
+  ["Despite the fall, He has a heart for you.","Get back up. You are loved."],
+  ["Peace comes from within.","Do not seek it without."],
+  ["Every moment is a fresh beginning.","Breathe and start again."],
+  ["Strength grows in the moments you think you can't go on.","Keep pushing forward."]
+];
+const SPLASH_IMAGES = [
+  "https://images.unsplash.com/photo-1506744626753-143683980b43?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1470770903672-71c14ca46917?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1518105779142-d978f1f72733?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=800&q=80"
 ];
 function showSplash(){
-  const q=SPLASH_QUOTES[new Date().getDate()%SPLASH_QUOTES.length];
+  const day = new Date().getDate();
+  const q=SPLASH_QUOTES[day%SPLASH_QUOTES.length];
+  const bg=SPLASH_IMAGES[day%SPLASH_IMAGES.length];
   $('#splashQuote').textContent='“'+q[0]+'”';
   $('#splashSub').textContent=q[1];
+  $('#splash').style.backgroundImage = `linear-gradient(rgba(10,10,20,0.7), rgba(10,10,20,0.85)), url('${bg}')`;
+  $('#splash').style.backgroundSize = 'cover';
+  $('#splash').style.backgroundPosition = 'center';
   let stars='';for(let i=0;i<60;i++){const s=Math.random()*2+1;stars+=`<span class="st" style="left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-delay:${Math.random()*3}s"></span>`}
   $('#splashStars').innerHTML=stars;
   $('#splash').classList.remove('hide');
@@ -635,8 +650,18 @@ function renderTodayStats(){
   $('#tGrat').textContent=d.entries.filter(e=>e.gratitude).length;
   // clean streak: days with no relapse marked
   let streak=0;const now=Date.now();
-  const relapseDays=new Set(d.entries.filter(e=>e.relapse).map(e=>new Date(e.t).toDateString()));
-  for(let i=0;i<365;i++){const day=new Date(now-i*864e5).toDateString();if(relapseDays.has(day))break;streak++}
+  const dEntries = d.entries || [];
+  const relapseDays=new Set(dEntries.filter(e=>e.relapse).map(e=>new Date(e.t).toDateString()));
+  const firstEntryTime = dEntries.length ? Math.min(...dEntries.map(e=>e.t)) : now;
+  const daysSinceStart = dEntries.length ? Math.floor((now - firstEntryTime) / 864e5) + 1 : 0;
+  for(let i=0; i<daysSinceStart; i++){
+    const day=new Date(now-i*864e5).toDateString();
+    if(relapseDays.has(day)) break;
+    streak++;
+  }
+  // If no entries at all, streak is 0.
+  // If there was a reset today, user expects "1" to show a fresh start
+  if(streak === 0 && dEntries.some(e=>e.relapse)) streak = 1;
   $('#tClean').textContent=streak;
   // rotating daily truth from your notes
   const truths=["“God has a heart for me.”","“Gratitude is the opposite of lust.”","“My temple is for love, kindness and pureness.”","“I was never meant to stand alone — He is with me.”","“Redirect the thought — never suppress it.”","“Every girl: care, respect, protect — mother or sister.”"];
@@ -660,7 +685,7 @@ function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>
 function renderInsights(){const d=getData(),now=Date.now(),week=7*864e5;
   const recent=d.entries.filter(e=>now-e.t<week);$('#sEntries').textContent=recent.length;
   let streak=0;const days=new Set(d.entries.map(e=>new Date(e.t).toDateString()));
-  for(let i=0;i<365;i++){const dd=new Date(now-i*864e5).toDateString();if(days.has(dd))streak++;else if(i>0)break}
+  for(let i=0;i<10000;i++){const dd=new Date(now-i*864e5).toDateString();if(days.has(dd))streak++;else if(i>0)break}
   $('#sStreak').textContent=streak;
   const moods=recent.filter(e=>e.mood!=null).map(e=>MOOD_VAL[e.mood]);
   $('#sAvg').textContent=moods.length?(moods.reduce((a,b)=>a+b,0)/moods.length).toFixed(1):'–';
@@ -708,7 +733,11 @@ function chainStepHTML(){
   const i=uState.step;
   // 0 OBSERVE
   if(i===0) return {title:'Observe', sub:'Tap is done. Now name what surfaced — don\'t suppress it. What thought, image or feeling came up?',
-    body:`<textarea class="field" id="uCapture" style="min-height:120px" placeholder="e.g. an old image, a feeling, a craving…">${escapeHtml(uState.captured)}</textarea>`,
+    body:`<textarea class="field" id="uCapture" style="min-height:120px;margin-bottom:10px" placeholder="e.g. an old image, a feeling, a craving…">${escapeHtml(uState.captured)}</textarea>
+      <button class="btn ghost" id="uVoiceBtn" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;margin-bottom:10px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+        <span>Dictate</span>
+      </button>`,
     btn:'I\'ve observed it →'};
   // 1 ACCEPT
   if(i===1) return {title:'Accept', sub:'Read this slowly. Let it land. (Tap to see another.)',
@@ -747,6 +776,20 @@ function renderUrge(){
   if($('#accMore')) $('#accMore').onclick=()=>{uState.accIdx=(uState.accIdx+1)%ACCEPT_CARDS.length;$('#accCard').textContent=ACCEPT_CARDS[uState.accIdx]};
   $$('#ustep .chaincard.mini[data-g]').forEach(c=>c.onclick=()=>{$('#uGrat').value=GRAT_SEEDS[c.dataset.g];uState.gratWritten=GRAT_SEEDS[c.dataset.g]});
   if(uState.step===4) startChant();
+
+  if($('#uVoiceBtn')){
+    $('#uVoiceBtn').onclick=()=>{
+      const btn=$('#uVoiceBtn'), span=btn.querySelector('span'), SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!SpeechRec){ alert("Voice dictation is not supported in this browser."); return; }
+      if(window.isDictating){ window.activeRec&&window.activeRec.stop(); return; }
+      const rec=new SpeechRec(); rec.continuous=true; rec.interimResults=true;
+      window.activeRec=rec; window.isDictating=true;
+      span.textContent="Listening... (tap to stop)"; btn.style.color="#e23b3b";
+      rec.onresult=e=>{ let txt=""; for(let j=0;j<e.results.length;j++)txt+=e.results[j][0].transcript; $('#uCapture').value=txt; uState.captured=txt; };
+      rec.onend=()=>{ window.isDictating=false; span.textContent="Dictate"; btn.style.color=""; };
+      rec.start();
+    };
+  }
 
   $('#uNext').onclick=()=>{
     const cap=$('#uCapture'); if(cap) uState.captured=cap.value;
