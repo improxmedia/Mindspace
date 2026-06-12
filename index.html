@@ -683,6 +683,7 @@ function renderTodayStats(){
 
 /* ===== JOURNAL / TIMELINE ===== */
 function renderTimeline(){const d=getData();
+  d.entries.sort((a,b)=>b.t-a.t);
   if(!d.entries.length){$('#timeline').innerHTML='<div class="empty">No entries yet. Your reflections and caught urges will appear here.</div>';return}
   $('#timeline').innerHTML=d.entries.map(e=>{const dt=new Date(e.t);
     const when=dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' · '+dt.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
